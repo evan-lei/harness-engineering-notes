@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>客户端 Lua AI 使用探索-RTCC · 工程笔记</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f1117;--surface:#181c24;--border:#252b38;
+  --text:#e2e8f0;--muted:#94a3b8;--accent:#60a5fa;
+  --code-bg:#1e2433;--warn:#fbbf24;--sidebar:260px;
+  --font:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB',sans-serif;
+  --mono:'SF Mono','Fira Code','Consolas',monospace;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:16px;line-height:1.75}
+
+/* ── NAV ── */
+.nav{position:fixed;top:0;left:0;right:0;height:56px;background:rgba(15,17,23,.92);
+  backdrop-filter:blur(12px);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 24px;z-index:100;gap:16px}
+.nav-back{color:var(--accent);text-decoration:none;font-size:14px;display:flex;align-items:center;gap:6px}
+.nav-back:hover{color:#93c5fd}
+.nav-back svg{width:16px;height:16px}
+.nav-title{font-size:14px;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-tag{font-size:11px;background:#065f46;color:#6ee7b7;padding:2px 10px;border-radius:20px;white-space:nowrap}
+
+/* ── LAYOUT ── */
+.layout{display:flex;padding-top:56px;min-height:100vh}
+
+/* ── SIDEBAR ── */
+.sidebar{width:var(--sidebar);flex-shrink:0;position:sticky;top:56px;height:calc(100vh - 56px);
+  overflow-y:auto;padding:24px 0;border-right:1px solid var(--border)}
+.sidebar::-webkit-scrollbar{width:4px}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.toc-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--muted);padding:0 20px 8px}
+.toc a{display:block;padding:5px 20px;font-size:13px;color:var(--muted);text-decoration:none;
+  border-left:2px solid transparent;transition:all .15s;line-height:1.5}
+.toc a:hover{color:var(--text);border-left-color:var(--border)}
+.toc a.active{color:var(--accent);border-left-color:var(--accent);background:rgba(96,165,250,.06)}
+.toc-h3{padding-left:36px!important;font-size:12px!important}
+.toc-h4{padding-left:52px!important;font-size:11px!important}
+.toc-divider{height:1px;background:var(--border);margin:8px 20px}
+
+/* ── CONTENT ── */
+.content{flex:1;min-width:0;padding:48px 60px 80px;max-width:860px}
+@media(max-width:1200px){.content{padding:40px 40px 80px}}
+
+/* Headings */
+.content h1{font-size:2rem;font-weight:700;color:#f1f5f9;line-height:1.3;margin-bottom:16px}
+.content h2{font-size:1.4rem;font-weight:600;color:#f1f5f9;margin:48px 0 16px;
+  padding-top:24px;border-top:1px solid var(--border)}
+.content h2:first-of-type{margin-top:32px}
+.content h3{font-size:1.1rem;font-weight:600;color:#cbd5e1;margin:32px 0 12px}
+.content h4{font-size:.95rem;font-weight:600;color:#94a3b8;margin:24px 0 10px}
+.content h1+blockquote{margin-top:0}
+
+/* Text */
+.content p{margin-bottom:14px;color:#d1d5db}
+.content ul,.content ol{padding-left:24px;margin-bottom:14px}
+.content li{margin-bottom:6px;color:#d1d5db}
+.content li strong{color:#e2e8f0}
+.content strong{color:#e2e8f0}
+.content a{color:var(--accent);text-decoration:none}
+.content a:hover{text-decoration:underline}
+.content hr{border:none;border-top:1px solid var(--border);margin:40px 0}
+
+/* Blockquote */
+.content blockquote{border-left:3px solid var(--accent);padding:12px 16px;
+  background:rgba(96,165,250,.06);border-radius:0 6px 6px 0;margin:16px 0;color:#94a3b8}
+.content blockquote p{margin-bottom:0;color:#94a3b8}
+.content blockquote strong{color:#bfdbfe}
+
+/* Code */
+.content code{font-family:var(--mono);font-size:.84em;background:var(--code-bg);
+  padding:2px 6px;border-radius:4px;color:#a5f3fc}
+.content pre{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;
+  padding:20px;overflow-x:auto;margin:16px 0}
+.content pre code{background:none;padding:0;color:#e2e8f0;font-size:.85rem;line-height:1.65}
+.content pre.plaintext code{color:#c8d3e0}
+
+/* Tables */
+.content table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.9rem}
+.content th{background:#1a2035;color:#94a3b8;font-weight:600;text-align:left;
+  padding:10px 14px;border:1px solid var(--border)}
+.content td{padding:10px 14px;border:1px solid var(--border);color:#d1d5db;vertical-align:top}
+.content tr:nth-child(even) td{background:rgba(255,255,255,.02)}
+.content td strong{color:#e2e8f0}
+
+/* Figures / Images */
+.content figure{margin:20px 0}
+.content figure img{max-width:100%;border-radius:8px;border:1px solid var(--border);display:block}
+.content figure figcaption{font-size:.8rem;color:var(--muted);margin-top:6px;text-align:center}
+.content img{max-width:100%;border-radius:8px;border:1px solid var(--border)}
+
+/* Mermaid */
+.mermaid{background:#141925;border:1px solid var(--border);border-radius:8px;
+  padding:20px;margin:16px 0;overflow-x:auto;text-align:center}
+.mermaid svg{max-width:100%}
+
+/* Section anchor spacing */
+.content [id]{scroll-margin-top:72px}
+
+/* Pros/Cons Cards */
+.pros-cons{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}
+.pros-cons-card{border-radius:8px;padding:16px}
+.pros-card{background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2)}
+.cons-card{background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2)}
+.pros-cons-card h4{font-size:.9rem;font-weight:600;margin-bottom:10px;margin-top:0}
+.pros-card h4{color:#6ee7b7}
+.cons-card h4{color:#fca5a5}
+.pros-cons-card ul{padding-left:16px;margin:0}
+.pros-cons-card li{font-size:.85rem;margin-bottom:4px;color:#d1d5db}
+@media(max-width:600px){.pros-cons{grid-template-columns:1fr}}
+
+/* Flow diagram */
+.flow-diagram{background:#141925;border:1px solid var(--border);border-radius:8px;padding:20px;margin:16px 0;font-family:var(--mono);font-size:.82rem;line-height:1.7;color:#c8d3e0;overflow-x:auto;white-space:pre}
+
+/* Comparison table highlight */
+.highlight-row td{background:rgba(96,165,250,.08)!important}
+
+/* ── FOOTER ── */
+.footer{text-align:center;padding:40px 20px;font-size:13px;color:var(--muted);
+  border-top:1px solid var(--border)}
+
+/* ── MOBILE ── */
+@media(max-width:768px){
+  .sidebar{display:none}
+  .content{padding:32px 20px 60px}
+  .content h1{font-size:1.6rem}
+  .content table{font-size:.8rem}
+  .content td,.content th{padding:8px 10px}
+}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a href="../" class="nav-back">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    工程笔记
+  </a>
+  <span class="nav-title">客户端 Lua AI 使用探索-RTCC</span>
+  <span class="nav-tag">VAS · Lua</span>
+</nav>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="toc-label">目录</div>
+    <nav class="toc">
+      <a href="#overview">一、概述</a>
+      <a href="#background" class="toc-h3">背景</a>
+      <a href="#goal" class="toc-h3">目标</a>
+      <div class="toc-divider"></div>
+      <a href="#requirements">二、工程要求</a>
+      <div class="toc-divider"></div>
+      <a href="#solution">三、方案设计</a>
+      <a href="#multi-try" class="toc-h3">多方案验证</a>
+      <a href="#lua-features" class="toc-h3">Lua 使用特性</a>
+      <a href="#final-solution" class="toc-h3">最终方案</a>
+      <a href="#templates" class="toc-h4">模板（Templates）</a>
+      <a href="#rules" class="toc-h4">规则（Rule）</a>
+      <a href="#commands" class="toc-h4">指令（Command）</a>
+      <a href="#ccd" class="toc-h4">编码配置文档（CCD）</a>
+      <div class="toc-divider"></div>
+      <a href="#rtcc-pro">四、RTCC Pro 方案</a>
+      <a href="#pro-bg" class="toc-h3">问题背景</a>
+      <a href="#pro-compare" class="toc-h3">方案对比</a>
+      <div class="toc-divider"></div>
+      <a href="#flow-compare">五、RTCC vs RTCC Pro 流程对比</a>
+      <a href="#rtcc-flow" class="toc-h3">RTCC 执行流程</a>
+      <a href="#pro-flow" class="toc-h3">RTCC Pro 执行流程</a>
+      <a href="#overall-flow" class="toc-h3">整体流程概览</a>
+      <div class="toc-divider"></div>
+      <a href="#issues">六、待优化问题</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <h1>客户端 Lua AI 使用探索<br><span style="color:#6ee7b7;font-size:1.4rem">RTCC</span></h1>
+    <blockquote>
+      <p>本文记录 VAS 团队在 Lua 场景下探索 AI 辅助开发的完整实践：从多方案验证到最终确立「模板 + Rules + 指令 + CCD」四层体系（RTCC），以及在缺少模板时的智能进化方案 RTCC Pro。</p>
+    </blockquote>
+
+    <hr>
+
+    <h2 id="overview">一、概述</h2>
+
+    <h3 id="background">背景</h3>
+    <p>在 AI 时代下，学习使用 AI 不仅是应用新技术，更是一场需要主动拥抱的认知升级。VAS 业务在日常版本开发中，Lua 的使用场景较多，在 Lua 中探索 AI 的使用，有助于提升团队研发效率。</p>
+    <figure>
+      <img src="https://notes-1256297898.cos.ap-beijing.myqcloud.com/rtcc/goal.jpg" alt="Lua AI 目标">
+      <figcaption>Lua AI 工程化目标全景</figcaption>
+    </figure>
+
+    <h3 id="goal">目标</h3>
+    <p>核心目标是通过自动化工具链，实现从产品需求文档（PRD）到 Lua 代码的智能转化，以及从设计工具（如 Figma）到 UI 代码的自动生成。</p>
+
+    <hr>
+
+    <h2 id="requirements">二、工程要求</h2>
+    <p>在实施过程中，高度关注团队协作所需的工程要素，确保系统的稳定性、代码的一致性、可读性、维护性以及扩展性。</p>
+
+    <table>
+      <thead><tr><th>要求</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><strong>规范化</strong></td><td>建立统一的代码规范、开发流程和文档标准，确保 AI 生成的代码符合项目要求（代码规范、流程规范、文档规范）。</td></tr>
+        <tr><td><strong>易用性</strong></td><td>降低使用门槛，实现零配置或最小配置即可使用，提供指令交互方式（PRD 一键转代码、Figma 一键转代码、批量处理）。</td></tr>
+        <tr><td><strong>准确性</strong></td><td>确保 AI 生成的代码准确理解需求，正确实现功能，减少人工修正工作（语义理解、上下文感知、错误检测）。</td></tr>
+        <tr><td><strong>拓展性</strong></td><td>提供灵活的扩展机制，支持自定义规则、插件和集成，适应不同项目需求（模板简易生成、规则简易拓展、配置开放）。</td></tr>
+        <tr><td><strong>智能化</strong></td><td>利用 AI 技术实现智能决策和自动化处理，减少人工干预（智能决策、自动选择最佳代码模式）。</td></tr>
+        <tr><td><strong>自主决策</strong></td><td>AI 能够基于上下文和规则做出合理的代码生成决策，选择最优实现方案（多种方案对比、冲突解决）。</td></tr>
+        <tr><td><strong>自主行动</strong></td><td>AI 不仅能够生成代码，还能执行相关操作，如文件创建、测试数据配置、入口文件配置等。</td></tr>
+      </tbody>
+    </table>
+
+    <hr>
+
+    <h2 id="solution">三、方案设计</h2>
+
+    <h3 id="multi-try">多方案验证尝试</h3>
+    <p>组内不同的人员，按照各自的方式探索 AI 在 Lua 中的使用，归纳出以下三种初始方案：</p>
+
+    <div class="pros-cons">
+      <div class="pros-cons-card pros-card">
+        <h4>✅ 模板 + Rules</h4>
+        <ul>
+          <li>快速生成：设计稿到代码只需几分钟</li>
+          <li>架构一致：所有代码遵循相同 MVC 架构</li>
+          <li>AI 分析：自动生成对应数据结构和 UI</li>
+        </ul>
+      </div>
+      <div class="pros-cons-card cons-card">
+        <h4>❌ 局限</h4>
+        <ul>
+          <li>描述差异：不同开发者描述方式不同</li>
+          <li>控制力弱：没有可控的 plan 流程</li>
+          <li>易用性弱：需要窗口描述需求</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="pros-cons">
+      <div class="pros-cons-card pros-card">
+        <h4>✅ 模板 + Rules + 脚本</h4>
+        <ul>
+          <li>脚本化：命令直接，不受个体差异影响</li>
+          <li>批量生成：快速生成多个类似页面</li>
+        </ul>
+      </div>
+      <div class="pros-cons-card cons-card">
+        <h4>❌ 局限</h4>
+        <ul>
+          <li>初次使用需了解系统使用方式</li>
+          <li>脚本维护成本</li>
+          <li>生产差异：没有规范的输入源</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="pros-cons">
+      <div class="pros-cons-card pros-card">
+        <h4>✅ 示例 + Rules + 对话</h4>
+        <ul>
+          <li>配置简单：不需要准备模板/脚本</li>
+          <li>实时迭代：发现问题立即修复</li>
+          <li>灵活性高：可生成任何结构</li>
+        </ul>
+      </div>
+      <div class="pros-cons-card cons-card">
+        <h4>❌ 局限</h4>
+        <ul>
+          <li>控制力弱：每次流程不固定</li>
+          <li>上下文限制：超长对话丢失上下文</li>
+          <li>风格统一依赖规则文档</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 id="lua-features">Lua 使用特性</h3>
+    <p>通过梳理 Lua 的使用特点，明确了方案选择的依据：</p>
+
+    <table>
+      <thead><tr><th>特性</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><strong>功能独立</strong></td><td>每个 Lua 页面只负责实现单一特定功能，自包含的完整单元，不依赖任何外部上下文或其它页面状态。</td></tr>
+        <tr><td><strong>逻辑简单</strong></td><td>整体流程基本是二叉树执行链路，基于预设判断条件分流，节点之间完全独立，无任何交互或依赖。</td></tr>
+        <tr><td><strong>场景独立</strong></td><td>每个需求在 Lua 层面都是独立场景，场景间完全隔离，具备高度的模块化和内聚性。</td></tr>
+        <tr><td><strong>组件规范</strong></td><td>采用标准化的组件规范：ListView、CollectionView、ViewPage、Segment 等核心组件。</td></tr>
+        <tr><td><strong>样式复用率高</strong></td><td>不同需求在实现榜单等功能时，展现出极高的样式复用率，通过统一组件构建。</td></tr>
+      </tbody>
+    </table>
+
+    <figure>
+      <img src="https://notes-1256297898.cos.ap-beijing.myqcloud.com/rtcc/logic.png" alt="Lua 逻辑流程">
+      <figcaption>Lua 执行链路：整体流程为二叉树结构，节点独立、无交互依赖</figcaption>
+    </figure>
+    <figure>
+      <img src="https://notes-1256297898.cos.ap-beijing.myqcloud.com/rtcc/arch.png" alt="Lua 架构图">
+      <figcaption>Lua 架构图：Business 业务层 → 各独立场景模块</figcaption>
+    </figure>
+
+    <h3 id="final-solution">最终方案：RTCC 四层体系</h3>
+    <p>模板化的方案能满足所有特征和需求。最终选用最佳实践，抽离出基础部分作为标准化模块，形成 <strong>RTCC 四层体系</strong>：</p>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin:16px 0">
+      <div style="flex:1;min-width:140px;background:#1a2035;border:1px solid #3b82f6;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.2rem;font-weight:700;color:#60a5fa">R</div>
+        <div style="font-weight:600;color:#e2e8f0;margin:4px 0">Rules</div>
+        <div style="font-size:.8rem;color:#94a3b8">规范约束体系</div>
+      </div>
+      <div style="flex:1;min-width:140px;background:#1a2035;border:1px solid #10b981;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.2rem;font-weight:700;color:#6ee7b7">T</div>
+        <div style="font-weight:600;color:#e2e8f0;margin:4px 0">Templates</div>
+        <div style="font-size:.8rem;color:#94a3b8">标准化代码模板</div>
+      </div>
+      <div style="flex:1;min-width:140px;background:#1a2035;border:1px solid #f59e0b;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.2rem;font-weight:700;color:#fcd34d">C</div>
+        <div style="font-weight:600;color:#e2e8f0;margin:4px 0">Commands</div>
+        <div style="font-size:.8rem;color:#94a3b8">自动化执行指令</div>
+      </div>
+      <div style="flex:1;min-width:140px;background:#1a2035;border:1px solid #a855f7;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.2rem;font-weight:700;color:#d8b4fe">C</div>
+        <div style="font-weight:600;color:#e2e8f0;margin:4px 0">CCD</div>
+        <div style="font-size:.8rem;color:#94a3b8">编码配置文档</div>
+      </div>
+    </div>
+
+    <h4 id="templates">模板（Templates）</h4>
+    <p>从最佳实践中抽离基础部分，作为标准化模块。AI 面对类似需求时，参考该标准化模板生成代码，能保证团队使用的一致性、规范化，也能保证代码生成的准确性和可读性。</p>
+    <p>模板化方案针对三个维度的特征：</p>
+    <ul>
+      <li><strong>语言层面</strong>：Lua 语法特性、特定桥接（bridge）、封装库（ROC 等）、折叠屏适配</li>
+      <li><strong>要求层面</strong>：规范化、准确性、易用性</li>
+      <li><strong>需求特征层面</strong>：功能独立、场景独立、组件规范、样式高复用</li>
+    </ul>
+
+    <h4 id="rules">规则（Rule）</h4>
+    <p>通过 Rules 规则控制体系统一管理各个维度的规范：</p>
+    <ul>
+      <li><strong>模版规范</strong>：生成规范（命名、元数据、分类）、识别规范（匹配机制）</li>
+      <li><strong>编码规范</strong>：命名规范、布局约束（margin、setGravity 等）、特定语法规范（for 循环、size 获取、timeout、toast 等）</li>
+      <li><strong>文件规范</strong>：代码存放目录、引用路径、入口文件配置</li>
+      <li><strong>输入规范</strong>：文档格式约束、PRD 结构约束、Figma 输出结构约束</li>
+    </ul>
+
+    <h4 id="commands">指令（Command）</h4>
+    <p>Commands 执行标准化流程，把所有节点串联起来，满足规范化、自主行动、简易性的要求，保证团队内工程化使用的一致性。</p>
+    <p>设计原则：</p>
+    <ul>
+      <li><strong>规范化</strong>：所有团队成员遵循相同的命令调用规范，输出格式保持一致</li>
+      <li><strong>自主行动</strong>：智能路由，根据输入参数自动识别需要执行的命令</li>
+      <li><strong>易用性</strong>：单个命令完成复杂工作流程，友好的进度提示和状态反馈</li>
+      <li><strong>功能独立</strong>：每个命令只负责一个特定功能，支持链式调用和组合</li>
+    </ul>
+
+    <pre class="mermaid">sequenceDiagram
+    participant User as 用户
+    participant Cursor as Cursor
+    participant Command as 具体命令
+    participant Templates as 模板
+    participant Rules as 规则
+    participant AI as AI
+    participant Output as 输出
+
+    User->>Cursor: 输入命令及参数
+    Cursor->>Command: 调用命令实现
+    Command->>Command: 执行Plan
+    Command->>Command: 识别input
+    Command->>Templates: 选择模板
+    Command->>Rules: 执行规范
+    Command->>AI: 调用AI
+    AI->>AI: 调用MCP
+    AI->>Output: 输出结果</pre>
+
+    <h4 id="ccd">编码配置文档（CCD）</h4>
+    <p>Code Config Document（CCD）是一个结构化的技术配置文档，用于将产品需求文档（PRD）转化为可执行的代码生成配置。作为产品需求与技术实现之间的桥梁，通过标准化的配置格式，实现从需求到代码的自动化生成流程。</p>
+    <p><strong>目标：</strong></p>
+    <ul>
+      <li>需求结构化：将 PRD 中的需求进行逻辑拆分和功能模块化</li>
+      <li>模板映射：为每个功能块匹配对应的代码生成模板</li>
+      <li>配置管理：统一管理代码中的可变信息（类名、URL、参数等）</li>
+      <li>资源整合：支持 UI 资源的输入和管理（图片、Figma 设计稿等）</li>
+      <li>执行指导：为 Command 工具提供清晰的执行指令和逻辑路径</li>
+    </ul>
+
+    <p><strong>执行步骤：</strong> Command 解析 CCD → 加载模板 → 注入配置 → 生成代码 → 整合 UI 资源。</p>
+
+    <blockquote>
+      <p>RTCC 方案主要适用于 Lua 小需求场景，例如商城、榜单等功能或活动，而非复杂的纯 Lua 大型项目。</p>
+    </blockquote>
+
+    <hr>
+
+    <h2 id="rtcc-pro">四、RTCC Pro 方案</h2>
+    <p><strong>背景：</strong> RTCC 实现了代码的高质量转化，但如果没有 <code>templates</code> 该怎么办？</p>
+    <p><strong>目的：</strong> 在 RTCC 的基础上，增加一套机制，能够在缺少模板的情况下自动学习项目代码，或者 MomoKit 相关 API，从而生成符合规范的代码。</p>
+
+    <h3 id="pro-bg">问题背景</h3>
+    <p>现有系统的工作流程：</p>
+    <pre class="plaintext"><code>PRD(Figma) --(rules+command)--> CCD --(rules+command+templates)--> 生成代码</code></pre>
+    <p><strong>核心问题：</strong> 如果 <code>templates/</code> 目录中没有所需的模板，该怎么办？</p>
+    <ul>
+      <li>用户需要生成一个"列表页"</li>
+      <li>但 <code>templates/</code> 中没有 <code>list_controller_template.lua</code></li>
+      <li>传统流程中断，无法生成代码</li>
+    </ul>
+
+    <h3 id="pro-compare">方案对比</h3>
+    <p>针对"缺少模板"的问题，评估了 7 种方案：</p>
+
+    <table>
+      <thead><tr><th>方案</th><th>思路</th><th>优点</th><th>缺点</th><th>推荐</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>方案1</strong><br>基于 MomoKit API 文档</td>
+          <td>读取 API 文档根据接口定义生成代码</td>
+          <td>API 是标准的、完整的；不依赖项目代码质量</td>
+          <td>缺少最佳实践；不知道项目编码规范和业务逻辑处理模式</td>
+          <td>⭐</td>
+        </tr>
+        <tr class="highlight-row">
+          <td><strong>方案2</strong><br>基于项目现有代码</td>
+          <td>使用 <code>codebase_search</code> 搜索项目中的相似实现，学习并生成代码</td>
+          <td>学习项目实际编码风格；包含最佳实践；符合项目规范</td>
+          <td>需要找到合适的参考代码；项目初期可能参考代码不足</td>
+          <td>⭐⭐</td>
+        </tr>
+        <tr class="highlight-row">
+          <td><strong>方案3</strong><br>混合智能方案</td>
+          <td>结合方案1和方案2：项目代码（风格/规范）+ MomoKit API（验证正确性）</td>
+          <td>结合两方案优点；更灵活健壮；API 用法经过验证</td>
+          <td>实现相对复杂；需同时维护两个数据源</td>
+          <td>⭐⭐⭐⭐⭐</td>
+        </tr>
+        <tr class="highlight-row">
+          <td><strong>方案4</strong><br>自动提取和演进模板</td>
+          <td>扫描项目代码→聚类分析→自动生成模板→验证优化→版本管理，持续完善模板库</td>
+          <td>自动化；动态更新；基于真实代码；持续完善</td>
+          <td>需要项目已有一定代码量；聚类分析需要一定计算</td>
+          <td>⭐⭐⭐⭐⭐</td>
+        </tr>
+        <tr>
+          <td><strong>方案5</strong><br>智能推荐 + 交互式生成</td>
+          <td>引导式对话 + 智能推荐参考代码</td>
+          <td>精准匹配；学习成本低；灵活组合</td>
+          <td>需要交互，不适合自动化场景</td>
+          <td>⭐⭐⭐⭐</td>
+        </tr>
+        <tr>
+          <td><strong>方案6</strong><br>代码库知识图谱</td>
+          <td>构建项目代码的知识图谱，智能推荐最佳组合</td>
+          <td>全局视角；智能推荐；一致性保证</td>
+          <td>实现复杂度高；需大量数据；维护成本高</td>
+          <td>⭐⭐⭐⭐⭐</td>
+        </tr>
+        <tr>
+          <td><strong>方案7</strong><br>渐进式模板生成</td>
+          <td>每次生成代码时，询问是否保存为模板</td>
+          <td>对用户透明；自动完善模板库</td>
+          <td>需多次交互；初期效果有限</td>
+          <td>⭐⭐⭐</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <blockquote>
+      <p>通过组合多个方案的优势，构建了一个智能、自动化、可持续演进的代码生成系统。系统不仅能快速生成高质量代码，还能不断从项目中学习和完善，真正实现「越用越快、越用越好」。</p>
+    </blockquote>
+
+    <hr>
+
+    <h2 id="flow-compare">五、RTCC vs RTCC Pro 流程对比</h2>
+
+    <h3 id="rtcc-flow">RTCC 执行流程</h3>
+    <pre class="flow-diagram">┌─────────────────────────────────────────────────────────────┐
+│                          RTCC 方案流程                       │
+└─────────────────────────────────────────────────────────────┘
+
+📋 步骤1：准备输入
+    PRD/Figma 设计稿
+        ↓
+    @generate_pr
+    【指令】.cursor/commands/generate_pr.md
+        ↓
+    生成 CCD（Code Config Document）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔨 步骤2：代码生成
+    @generate_code code_templates/inputs/{module}_{page}.md
+        ↓
+    检查是否有现成模板？
+        ├─ 有 ✅ → 使用模板生成（快速、高质量）
+        │          【应用规则】
+        │          - @syntax_rules, @naming_rules
+        │          - @layout_rules, @component_rules
+        │          ↓
+        │      生成代码完成 ✅
+        │
+        └─ 没有 ⚠️ → 手动处理路径（问题路径）
+            ├──→ AI 尝试猜测如何实现
+            │    ❌ 没有参考代码搜索机制
+            │    ❌ 没有继承关系验证
+            │    - 可能使用错误的 API
+            │    - 代码质量不稳定
+            │
+            └──→ 生成代码质量不佳
+
+❌ 核心问题：
+  1. 没有系统化的参考代码搜索机制
+  2. 无法自动识别最佳参考代码
+  3. 无法验证参考代码的正确性
+  4. 无法将优质代码沉淀为模板</pre>
+
+    <h3 id="pro-flow">RTCC Pro 执行流程</h3>
+    <pre class="flow-diagram">┌─────────────────────────────────────────────────────────────┐
+│                     RTCC Pro 方案                            │
+└─────────────────────────────────────────────────────────────┘
+
+📋 步骤1：准备输入（同 RTCC）
+    PRD/Figma 设计稿 → @generate_pr → 生成 CCD
+
+🔨 步骤2：代码生成（智能增强）
+    检查是否有现成模板？
+        ├─ 有 ✅ → 使用模板生成（快速路径，同 RTCC）
+        │
+        └─ 没有 ⭐ → 智能搜索流程（Pro）
+            ↓
+        ┌───────────────────────────────┐
+        │ 步骤2.1：智能搜索项目代码      │
+        │ - codebase_search 语义搜索    │
+        │ - 多维度搜索，自动去重排序    │
+        │ - 找到 3-5 个最佳参考         │
+        └───────────────────────────────┘
+            ↓
+        ┌───────────────────────────────┐
+        │ 步骤2.2：智能分析和推荐        │
+        │ - 读取参考代码的类定义         │
+        │ - 验证继承关系 ⭐             │
+        │   Controller 必须是 MLController
+        │   Cell 优先选择 MLView        │
+        │ - 计算匹配度得分              │
+        └───────────────────────────────┘
+            ↓
+        ┌───────────────────────────────┐
+        │ 步骤2.3：用户交互选择（可选）  │
+        │ - 展示分析结果和推荐理由       │
+        └───────────────────────────────┘
+            ↓
+        ┌───────────────────────────────┐
+        │ 步骤2.4：规范化代码生成 ⭐    │
+        │ - @syntax_rules  Lua语法规范  │
+        │ - @naming_rules  命名规范     │
+        │ - @layout_rules  布局规范     │
+        │ - @component_rules 组件规范  │
+        │ - @code_search_rules 初始化  │
+        │ - @test_data_rules 测试数据  │
+        └───────────────────────────────┘
+            ↓
+        ┌───────────────────────────────┐
+        │ 步骤2.5：自动提取模板 ⭐      │
+        │ - 询问用户是否保存为模板       │
+        │ - 提取模板骨架                │
+        │ - 更新 template_config.json  │
+        │ - 下次直接使用模板 ✨         │
+        └───────────────────────────────┘
+
+✅ 核心优势：
+  1. 智能搜索，自动找到最佳参考
+  2. 验证继承关系，避免使用错误的参考 ⭐
+  3. 规范化生成，质量稳定
+  4. 自动沉淀，模板库持续演进
+  5. 一次投入，长期受益</pre>
+
+    <h3 id="overall-flow">整体流程概览</h3>
+    <pre class="flow-diagram">📋 输入：PRD/Figma 设计稿
+    ↓
+┌───────────────────────────────────┐
+│ 步骤1：@generate_pr                │
+│ - 智能分析设计稿                    │
+│ - 推断模块名、页面类型、功能需求     │
+│ - 提取 UI、数据字段、布局           │
+│ - 生成 CCD (Code Config Document) │
+└───────────────────────────────────┘
+    ↓
+📄 输出：code_templates/inputs/{module}_{page}.md
+    ↓
+检查模板？
+    ├─ 有 ✅ → 使用模板生成（快速路径）
+    │          【应用 syntax/naming/layout/component 规范】
+    │          3秒生成高质量代码 ✅
+    │
+    └─ 没有 → 智能搜索流程（Pro）⭐
+        ├─ 智能搜索参考代码（3-5 秒）
+        ├─ 验证继承关系 ⭐ 核心创新
+        │  Controller 必须是 MLController
+        │  Cell 优先选择 MLView
+        ├─ 智能推荐最佳匹配
+        ├─ 规范化代码生成
+        └─ 自动提取模板 ⭐ 下次复用
+            ↓
+        生成高质量代码 + 保存为模板 ✨</pre>
+
+    <hr>
+
+    <h2 id="issues">六、待优化问题</h2>
+
+    <h3>Rules 不执行问题</h3>
+    <figure>
+      <img src="https://notes-1256297898.cos.ap-beijing.myqcloud.com/rtcc/rules1.jpg" alt="Rules 不执行问题截图1">
+    </figure>
+    <figure>
+      <img src="https://notes-1256297898.cos.ap-beijing.myqcloud.com/rtcc/rules2.jpg" alt="Rules 不执行问题截图2">
+    </figure>
+
+    <h3>模板审核</h3>
+    <p>团队需要对抽离的模板进行代码审核，保证在结构、功能、语法等层面符合团队使用规范。</p>
+
+    <h3>复杂 UI 实现效果差</h3>
+    <p>面对复杂的 UI，AI 实现效果差，需要手动 coding。</p>
+
+    <h3>全新项目使用问题</h3>
+    <p>在没有代码量的新项目中使用结果一般。建议在项目已有一定代码积累（推荐）的情况下使用 RTCC Pro，新项目可先从 RTCC 基础方案开始。</p>
+
+    <hr>
+
+    <footer class="footer">
+      <p>工程笔记 · VAS · AI 辅助开发实践 · <a href="../">返回首页</a></p>
+    </footer>
+  </main>
+</div>
+
+<script>
+mermaid.initialize({startOnLoad:true,theme:'dark',themeVariables:{
+  primaryColor:'#1e3a5f',primaryTextColor:'#e2e8f0',primaryBorderColor:'#3b82f6',
+  lineColor:'#64748b',secondaryColor:'#1a2035',tertiaryColor:'#141925',
+  background:'#0f1117',mainBkg:'#1e2433',nodeBorder:'#3b82f6',
+  clusterBkg:'#141925',titleColor:'#f1f5f9',edgeLabelBackground:'#1e2433',
+  fontFamily:'-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif'
+}});
+
+const toc=document.querySelectorAll('.toc a');
+const obs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      const id='#'+e.target.id;
+      toc.forEach(a=>{
+        a.classList.toggle('active',a.getAttribute('href')===id);
+      });
+    }
+  });
+},{rootMargin:'-20% 0px -70% 0px'});
+document.querySelectorAll('.content [id]').forEach(el=>obs.observe(el));
+</script>
+</body>
+</html>

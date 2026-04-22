@@ -1,6 +1,6 @@
 # harness-engineering-notes
 
-VAS iOS 团队 AI 辅助开发工程笔记，记录从 Prompt Engineering 到 Harness Engineering 的实践探索。
+VAS 团队 AI 辅助开发工程笔记，记录从 Lua AI 到 Native AI、从 Prompt Engineering 到 Harness Engineering 的实践探索。
 
 | 地址 | 说明 |
 |------|------|
@@ -13,7 +13,9 @@ VAS iOS 团队 AI 辅助开发工程笔记，记录从 Prompt Engineering 到 Ha
 
 | 笔记 | 目录 | 简介 |
 |------|------|------|
-| 客户端 Harness Engineering 使用探索 | `harness/` | 从 Prompt → Context → Harness 的完整演进，含 SKILL+、CCD、Hooks 全套实践 |
+| 客户端 Native AI使用探索-Harness Engineering | `harness/` | 从 Prompt → Context → Harness 的完整演进，含 SKILL+、CCD、Hooks 全套实践 |
+| 客户端 Native AI使用探索-Context Engineering | `context-engineering/` | Rule → Code Graph → Agent Skill+Rules 协同方案，聚焦原生开发 AI 上下文传递 |
+| 客户端 Lua AI 使用探索-RTCC | `rtcc/` | 模板+Rules+指令+CCD 四层体系（RTCC），以及 RTCC Pro 智能参考代码搜索与模板沉淀 |
 
 ---
 
@@ -21,12 +23,16 @@ VAS iOS 团队 AI 辅助开发工程笔记，记录从 Prompt Engineering 到 Ha
 
 ```
 harness-engineering-notes/
-├── index.html                              # 首页（笔记列表入口）
-├── CNAME                                   # 自定义域名 notes.evan-minho.com
+├── index.html                                        # 首页（笔记列表入口）
+├── CNAME                                             # 自定义域名 notes.evan-minho.com
 ├── README.md
 ├── harness/
-│   └── index.html                          # 客户端 Harness Engineering 使用探索
-└── 客户端Harness Engineering 使用探索.md   # 源文档（Markdown 存档）
+│   └── index.html                                    # 客户端 Native AI使用探索-Harness Engineering
+├── context-engineering/
+│   └── index.html                                    # 客户端 Native AI使用探索-Context Engineering
+├── rtcc/
+│   └── index.html                                    # 客户端 Lua AI 使用探索-RTCC
+└── 客户端Harness Engineering 使用探索.md             # 源文档（Markdown 存档）
 ```
 
 ---
