@@ -124,3 +124,28 @@ git remote set-url origin https://github.com/evan-lei/harness-engineering-notes.
 - 笔记页设计规范：深色主题（`#0f1117` 背景）、左侧粘性 TOC、Mermaid.js 图表
 - Mermaid 初始化：`mermaid.initialize({ startOnLoad: true, theme: 'dark' })`
 - 外链图片必须先传到 COS，不依赖第三方外链（外链随时失效）
+
+---
+
+## 流程图规范：禁止使用 Mermaid，改用 HTML/CSS 自绘
+
+**所有流程图一律用 HTML/CSS 自绘，不使用 `<pre class="mermaid">` 块。**
+
+原因：
+- Mermaid 生成的 TD（Top-Down）图在页面里又长又窄，严重占版
+- 自绘 HTML 可以横向分组、高亮循环路径、控制每个节点的颜色和间距，视觉效果远优于 Mermaid
+
+**自绘原则：**
+1. 按"阶段"横向分组：输入 → 处理 → 分支 → 汇合 → 输出
+2. 分支用 `display:flex` 并排，不垂直串联
+3. 有循环（retry）的节点用 `↺ 重新 xxx` 文字标注，不画回指箭头
+4. 颜色约定：
+   - 蓝色（`#2563eb`）：普通流程节点
+   - 紫色（`#7c3aed`）：执行/处理节点
+   - 橙色（`#d97706`）：判断节点（Decision）
+   - 绿色（`#16a34a`）：完整覆盖 / 成功终态
+   - 红色（`#dc2626`）：错误 / 拒绝 / 无覆盖
+   - 灰色（`#374151`）：次要/汇合节点
+5. 所有 `<style>` 直接内联在图的 HTML 块内（不污染全局）
+
+**参考实现**：`harness/index.html` 中的 `.ccd-diagram`（ccd-build 图）和 `.exe-diagram`（ccd-execute 图）

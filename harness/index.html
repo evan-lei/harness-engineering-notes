@@ -588,30 +588,109 @@ ns_bottom_gift_update 消息处理、MDBottomBarGiftEntranceView 相关功能时
 </style>
 
 <p><strong>⑤ ccd-execute — 解决"执行流程无控制"和"Checkpoint 被敷衍"</strong></p>
-<pre class="mermaid">flowchart TD
-    A[读取 CCD 文件] --> B[扫描 ✅ 已完成 标记]
-    B --> C{存在中断 Phase？}
-    C -->|有| D[从中断处恢复]
-    C -->|无| E[从 Phase 1 开始]
-    D --> F[执行当前 Phase 任务]
-    E --> F
-    F --> G[AI 回答 Checkpoint]
-    G --> H{答案质量审查}
-    H -->|"仅 OK / 已完成（敷衍）"| I[⚠️ 拒绝\n要求提供具体内容]
-    I --> G
-    H -->|实质性回答| J{还有下一 Phase？}
-    J -->|有| F
-    J -->|无| K[强制执行 code-review]
-    K --> L{存在 🔴 CRITICAL？}
-    L -->|有| M[必须修复\n重新 Review]
-    M --> K
-    L -->|无| N[✅ 完成]
+<div class="exe-diagram">
+  <!-- Stage 1: Init -->
+  <div class="ex-stage-label">① 初始化</div>
+  <div class="ex-row">
+    <div class="ex-box ex-blue">读取 CCD 文件</div>
+    <div class="ex-arr">→</div>
+    <div class="ex-box ex-blue">扫描已完成标记</div>
+    <div class="ex-arr">→</div>
+    <div class="ex-decision">中断？</div>
+    <div class="ex-fork">
+      <div class="ex-fork-item"><span class="ex-tag ex-tag-yes">有</span><div class="ex-box ex-blue-sm">从中断处恢复</div></div>
+      <div class="ex-fork-item"><span class="ex-tag ex-tag-no">无</span><div class="ex-box ex-blue-sm">从 Phase 1 开始</div></div>
+    </div>
+  </div>
 
-    style H fill:#f5a623,color:#fff
-    style I fill:#e74c3c,color:#fff
-    style L fill:#f5a623,color:#fff
-    style M fill:#e74c3c,color:#fff
-    style N fill:#27ae60,color:#fff</pre>
+  <div class="ex-down-arr">↓</div>
+
+  <!-- Stage 2: Execute loop -->
+  <div class="ex-stage-label">② 执行循环 <span class="ex-loop-badge">↺ 循环至所有 Phase 完成</span></div>
+  <div class="ex-loop-box">
+    <div class="ex-loop-row">
+      <div class="ex-box ex-purple">执行当前 Phase 任务</div>
+      <div class="ex-arr">→</div>
+      <div class="ex-box ex-purple">AI 回答 Checkpoint</div>
+      <div class="ex-arr">→</div>
+      <div class="ex-decision ex-decision-warn">质量审查</div>
+    </div>
+    <div class="ex-quality-branches">
+      <div class="ex-bad-branch">
+        <span class="ex-tag ex-tag-bad">仅"OK / 已完成"</span>
+        <div class="ex-arr ex-arr-down">↓</div>
+        <div class="ex-box ex-red">⚠️ 拒绝<br><span>要求补充具体内容</span></div>
+        <div class="ex-retry-arrow">↺ 重新回答</div>
+      </div>
+      <div class="ex-good-branch">
+        <span class="ex-tag ex-tag-good">实质性回答</span>
+        <div class="ex-arr ex-arr-down">↓</div>
+        <div class="ex-decision">还有 Phase？</div>
+        <div class="ex-phase-fork">
+          <span class="ex-tag ex-tag-yes">有</span><span class="ex-phase-back">↺ 继续下一 Phase</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ex-down-arr">↓ 全部 Phase 完成</div>
+
+  <!-- Stage 3: Review -->
+  <div class="ex-stage-label">③ 强制 Code Review</div>
+  <div class="ex-review-row">
+    <div class="ex-box ex-blue">强制执行 code-review</div>
+    <div class="ex-arr">→</div>
+    <div class="ex-decision ex-decision-warn">存在 🔴 CRITICAL？</div>
+    <div class="ex-review-fork">
+      <div class="ex-fork-item">
+        <span class="ex-tag ex-tag-bad">有</span>
+        <div class="ex-box ex-red ex-box-sm">必须修复<br><span>重新 Review</span></div>
+        <div class="ex-retry-arrow">↺ 循环</div>
+      </div>
+      <div class="ex-fork-item">
+        <span class="ex-tag ex-tag-good">无</span>
+        <div class="ex-box ex-green">✅ 完成</div>
+      </div>
+    </div>
+  </div>
+</div>
+<style>
+.exe-diagram{background:#141925;border:1px solid #252b38;border-radius:10px;padding:20px;margin:16px 0;font-size:13px}
+.ex-stage-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+  color:#64748b;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.ex-loop-badge{font-size:10px;text-transform:none;letter-spacing:0;color:#7c3aed;
+  background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.3);padding:2px 8px;border-radius:10px}
+.ex-row,.ex-loop-row,.ex-review-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ex-box{background:#1e2433;border:1px solid #2d3748;border-radius:7px;padding:8px 14px;
+  color:#e2e8f0;font-weight:500;text-align:center;white-space:nowrap;line-height:1.4}
+.ex-box span{display:block;font-size:11px;color:#94a3b8;font-weight:400;margin-top:2px}
+.ex-box-sm{font-size:12px;padding:6px 10px}
+.ex-blue{border-color:#2563eb;background:#1e293b}
+.ex-blue-sm{border-color:#1d4ed8;background:#1a2540;font-size:12px;padding:6px 12px}
+.ex-purple{border-color:#7c3aed;background:#1e1a2e}
+.ex-red{border-color:#dc2626;background:#200a0a}
+.ex-green{border-color:#16a34a;background:#0a2014;color:#86efac;font-weight:700;padding:10px 20px}
+.ex-decision{background:#2d1f0a;border:1px solid #d97706;border-radius:7px;
+  padding:8px 14px;color:#fbbf24;font-weight:600;text-align:center;white-space:nowrap}
+.ex-decision-warn{background:#1f1a08;border-color:#ca8a04}
+.ex-arr{color:#4a5568;font-size:16px;flex-shrink:0}
+.ex-arr-down{color:#4a5568;font-size:16px;text-align:center;margin:4px 0}
+.ex-down-arr{text-align:center;color:#4a5568;font-size:13px;margin:12px 0 8px;letter-spacing:.05em}
+.ex-fork{display:flex;gap:10px;margin-left:4px}
+.ex-fork-item{display:flex;flex-direction:column;align-items:center;gap:5px}
+.ex-tag{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.ex-tag-yes{background:rgba(96,165,250,.2);color:#93c5fd;border:1px solid rgba(96,165,250,.3)}
+.ex-tag-no{background:rgba(100,116,139,.2);color:#94a3b8;border:1px solid rgba(100,116,139,.3)}
+.ex-tag-bad{background:rgba(220,38,38,.2);color:#fca5a5;border:1px solid rgba(220,38,38,.3)}
+.ex-tag-good{background:rgba(22,163,74,.2);color:#86efac;border:1px solid rgba(22,163,74,.3)}
+.ex-loop-box{background:#191e2d;border:1px solid #2d3748;border-radius:8px;padding:16px;margin-bottom:4px}
+.ex-quality-branches{display:flex;gap:20px;margin-top:14px;justify-content:center;flex-wrap:wrap}
+.ex-bad-branch,.ex-good-branch{display:flex;flex-direction:column;align-items:center;gap:6px}
+.ex-retry-arrow{font-size:11px;color:#ef4444;margin-top:2px}
+.ex-phase-fork{display:flex;align-items:center;gap:6px;margin-top:4px}
+.ex-phase-back{font-size:11px;color:#818cf8}
+.ex-review-fork{display:flex;gap:16px;margin-left:6px;flex-wrap:wrap}
+</style>
 <blockquote><p>Checkpoint 质量由 ccd-execute 主动审查，不依赖人工判断；Code Review 分 CRITICAL / WARNING 两级，严重问题必须修复后才能通过。</p></blockquote>
 <hr />
 
