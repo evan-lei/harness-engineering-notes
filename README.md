@@ -1,41 +1,51 @@
 # harness-engineering-notes
 
-静态单页：**客户端 Harness Engineering 使用探索**（长文排版 + Mermaid 流程图）。
+VAS iOS 团队 AI 辅助开发工程笔记，记录从 Prompt Engineering 到 Harness Engineering 的实践探索。
 
-| 项目 | 说明 |
+| 地址 | 说明 |
 |------|------|
-| 页面入口 | 仓库根目录 `index.html` |
-| 源稿 | `客户端Harness Engineering 使用探索.md`（改版后可再用 Pandoc 生成正文后套模板） |
-| 部署 | `git push` 到 `main` 后，**GitHub Pages**（根目录）自动发布 |
+| 🌐 [notes.evan-minho.com](https://notes.evan-minho.com) | 自定义域名，**优先用这个** |
+| [evan-lei.github.io/harness-engineering-notes](https://evan-lei.github.io/harness-engineering-notes) | GitHub Pages 备用 |
 
-## 本地预览
+---
 
-直接用浏览器打开 `index.html`，或使用任意静态服务器。
+## 笔记列表
 
-## GitHub 仓库创建（首次）
+| 笔记 | 目录 | 简介 |
+|------|------|------|
+| 客户端 Harness Engineering 使用探索 | `harness/` | 从 Prompt → Context → Harness 的完整演进，含 SKILL+、CCD、Hooks 全套实践 |
 
-1. GitHub → **New repository** → 名称建议 `harness-engineering-notes`，Public，**不要**勾选添加 README（本地已有）。
-2. 本地（若尚未 `git init`）：
+---
 
+## 目录结构
+
+```
+harness-engineering-notes/
+├── index.html                              # 首页（笔记列表入口）
+├── CNAME                                   # 自定义域名 notes.evan-minho.com
+├── README.md
+├── harness/
+│   └── index.html                          # 客户端 Harness Engineering 使用探索
+└── 客户端Harness Engineering 使用探索.md   # 源文档（Markdown 存档）
+```
+
+---
+
+## 新增笔记
+
+1. 在根目录新建子目录：`mkdir -p <笔记名>`
+2. 创建 `<笔记名>/index.html`（参考 `harness/index.html` 的模板）
+3. 在根目录 `index.html` 的 `.cards` 里新增一个 `.card`
+4. 更新本 `README.md`
+5. 提交推送（GitHub Pages 自动部署）：
    ```bash
-   cd /Users/user/Documents/harness-engineering-notes
-   git init
    git add .
-   git commit -m "Initial: Harness Engineering 使用探索"
-   git branch -M main
-   git remote add origin https://github.com/evan-lei/harness-engineering-notes.git
-   git push -u origin main
+   git commit -m "add <笔记名>"
+   git push origin main
    ```
 
-3. 仓库 **Settings → Pages**：**Deploy from branch** → **main** → **/(root)**。
+## 部署说明
 
-访问示例：`https://evan-lei.github.io/harness-engineering-notes/`（具体路径以仓库名为准）。
-
-## 自定义子域名（可选）
-
-在 DNS 提供商处为子域名添加 **CNAME** 指向 GitHub Pages（如 `evan-lei.github.io`），并在本仓库 **Settings → Pages → Custom domain** 中填写该子域名（与 [jiufu-fishing](https://github.com/evan-lei/jiufu-fishing) 配置方式一致）。
-
-## 技术说明
-
-- 正文由 **Pandoc (GFM)** 转换后嵌入模板；表格带横向滚动容器；代码块分区样式。
-- 图表依赖 CDN：`mermaid@10`（需联网）。
+- **托管**：GitHub Pages（`main` 分支根目录）
+- **域名**：Cloudflare DNS → CNAME `notes` → `evan-lei.github.io`，DNS only（灰色云朵）
+- **推送**：使用 Personal Access Token，详见 `evan-lei.github.io` 仓库的 `GITHUB-PAGES-SKILL.md`
